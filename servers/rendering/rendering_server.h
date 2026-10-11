@@ -599,6 +599,7 @@ public:
 
 	virtual void viewport_set_sdf_oversize_and_scale(RID p_viewport, RSE::ViewportSDFOversize p_oversize, RSE::ViewportSDFScale p_scale) = 0;
 
+	virtual void viewport_set_positional_shadow_atlas_shared_from(RID p_viewport, RID p_source) = 0;
 	virtual void viewport_set_positional_shadow_atlas_size(RID p_viewport, int p_size, bool p_16_bits = true) = 0;
 	virtual void viewport_set_positional_shadow_atlas_quadrant_subdivision(RID p_viewport, int p_quadrant, int p_subdiv) = 0;
 

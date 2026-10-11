@@ -161,6 +161,7 @@ public:
 
 	// Can turn on and off from the engine if desired.
 	void set_caster_culling_active(bool p_active) { data.caster_culling_active = p_active; }
+	bool uses_full_shadow_casters() const { return !data.caster_culling_active; }
 	void set_light_culling_active(bool p_active) { data.light_culling_active = p_active; }
 
 private:

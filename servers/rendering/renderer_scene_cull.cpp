@@ -154,6 +154,12 @@ void RendererSceneCull::camera_set_cull_mask(RID p_camera, uint32_t p_layers) {
 	camera->visible_layers = p_layers;
 }
 
+bool RendererSceneCull::camera_can_share_positional_shadows(RID p_camera) const {
+	const Camera *camera = camera_owner.get_or_null(p_camera);
+	// Restrict this experimental path to full-layer, full-caster shadows.
+	return camera && camera->visible_layers == 0xFFFFF && light_culler->uses_full_shadow_casters();
+}
+
 void RendererSceneCull::camera_set_environment(RID p_camera, RID p_env) {
 	Camera *camera = camera_owner.get_or_null(p_camera);
 	ERR_FAIL_NULL(camera);

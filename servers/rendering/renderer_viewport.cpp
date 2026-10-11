@@ -331,8 +331,21 @@ void RendererViewport::_draw_3d(Viewport *p_viewport) {
 		}
 	}
 
+	RID positional_shadow_atlas = p_viewport->shadow_atlas;
+	Viewport *source = viewport_owner.get_or_null(p_viewport->positional_shadow_atlas_shared_from);
+	// Keep ownership local: freeing the source simply restores this viewport's atlas.
+	// No chains, camera-dependent caster culling, layer masks or shadow mesh LOD.
+	if (source && source != p_viewport && !source->positional_shadow_atlas_shared_from.is_valid() &&
+			source->scenario == p_viewport->scenario && source->scenario.is_valid() &&
+			source->mesh_lod_threshold == 0.0f && p_viewport->mesh_lod_threshold == 0.0f &&
+			source->shadow_atlas_size == p_viewport->shadow_atlas_size &&
+			source->shadow_atlas_16_bits == p_viewport->shadow_atlas_16_bits &&
+			RSG::scene->camera_can_share_positional_shadows(source->camera) &&
+			RSG::scene->camera_can_share_positional_shadows(p_viewport->camera)) {
+		positional_shadow_atlas = source->shadow_atlas;
+	}
 	float screen_mesh_lod_threshold = p_viewport->mesh_lod_threshold / float(p_viewport->size.width);
-	RSG::scene->render_camera(p_viewport->render_buffers, p_viewport->camera, p_viewport->scenario, p_viewport->self, p_viewport->internal_size, p_viewport->jitter_phase_count, screen_mesh_lod_threshold, p_viewport->shadow_atlas, p_viewport->window_output_max_value, &p_viewport->render_info);
+	RSG::scene->render_camera(p_viewport->render_buffers, p_viewport->camera, p_viewport->scenario, p_viewport->self, p_viewport->internal_size, p_viewport->jitter_phase_count, screen_mesh_lod_threshold, positional_shadow_atlas, p_viewport->window_output_max_value, &p_viewport->render_info);
 
 	RENDER_TIMESTAMP("< Render 3D Scene");
 #endif // _3D_DISABLED
@@ -1373,6 +1386,14 @@ void RendererViewport::viewport_set_canvas_stacking(RID p_viewport, RID p_canvas
 	ERR_FAIL_COND(!viewport->canvas_map.has(p_canvas));
 	viewport->canvas_map[p_canvas].layer = p_layer;
 	viewport->canvas_map[p_canvas].sublayer = p_sublayer;
+}
+
+void RendererViewport::viewport_set_positional_shadow_atlas_shared_from(RID p_viewport, RID p_source) {
+	Viewport *viewport = viewport_owner.get_or_null(p_viewport);
+	ERR_FAIL_NULL(viewport);
+	ERR_FAIL_COND(p_source == p_viewport);
+	ERR_FAIL_COND(p_source.is_valid() && !viewport_owner.owns(p_source));
+	viewport->positional_shadow_atlas_shared_from = p_source;
 }
 
 void RendererViewport::viewport_set_positional_shadow_atlas_size(RID p_viewport, int p_size, bool p_16_bits) {

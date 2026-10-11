@@ -4405,6 +4405,14 @@
 				Sets the number of subdivisions to use in the specified shadow atlas [param quadrant] for omni and spot shadows. See also [method Viewport.set_positional_shadow_atlas_quadrant_subdiv].
 			</description>
 		</method>
+		<method name="viewport_set_positional_shadow_atlas_shared_from">
+			<return type="void" />
+			<param index="0" name="viewport" type="RID" />
+			<param index="1" name="source" type="RID" />
+			<description>
+				Experimental: reuse the source viewport's positional shadow atlas without transferring ownership. An empty source RID disables sharing. Both cameras must render all 20 visibility layers in the same scenario, have zero mesh LOD threshold and matching atlas size and precision, and tighter shadow caster culling must be disabled at engine startup. Source viewports that themselves share an atlas are not eligible. Ineligible or freed sources fall back to the local atlas. Directional shadows are unaffected. Source atlas subdivision and camera-dependent allocation can affect shadow resolution; this is an opt-in rendering experiment.
+			</description>
+		</method>
 		<method name="viewport_set_positional_shadow_atlas_size">
 			<return type="void" />
 			<param index="0" name="viewport" type="RID" />

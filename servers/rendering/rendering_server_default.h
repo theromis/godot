@@ -793,6 +793,7 @@ public:
 
 	FUNC2(viewport_set_global_canvas_transform, RID, const Transform2D &)
 	FUNC4(viewport_set_canvas_stacking, RID, RID, int, int)
+	FUNC2(viewport_set_positional_shadow_atlas_shared_from, RID, RID)
 	FUNC3(viewport_set_positional_shadow_atlas_size, RID, int, bool)
 	FUNC3(viewport_set_sdf_oversize_and_scale, RID, RSE::ViewportSDFOversize, RSE::ViewportSDFScale)
 	FUNC3(viewport_set_positional_shadow_atlas_quadrant_subdivision, RID, int, int)

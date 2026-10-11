@@ -99,6 +99,7 @@ public:
 		uint64_t time_gpu_end;
 
 		RID shadow_atlas;
+		RID positional_shadow_atlas_shared_from;
 		int shadow_atlas_size = 2048;
 		bool shadow_atlas_16_bits = true;
 
@@ -272,6 +273,7 @@ public:
 
 	void viewport_set_canvas_cull_mask(RID p_viewport, uint32_t p_canvas_cull_mask);
 
+	void viewport_set_positional_shadow_atlas_shared_from(RID p_viewport, RID p_source);
 	void viewport_set_positional_shadow_atlas_size(RID p_viewport, int p_size, bool p_16_bits = true);
 	void viewport_set_positional_shadow_atlas_quadrant_subdivision(RID p_viewport, int p_quadrant, int p_subdiv);
 
