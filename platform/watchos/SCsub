@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+from misc.utility.scons_hints import *
+
+from platform_watchos_builders import generate_bundle
+from SCons.Script import Glob
+
+from platform_methods import combine_libs_apple_embedded, setup_swift_builder
+
+Import("env")
+
+swift_files = Glob("*.swift")
+swift_file_names = list(map(lambda f: f.name, swift_files))
+
+mm_files = Glob("*.mm")
+mm_file_names = list(map(lambda f: f.name, mm_files))
+
+cpp_files = Glob("*.cpp")
+cpp_file_names = list(map(lambda f: f.name, cpp_files))
+
+env_watchos = env.Clone()
+
+# Configure Swift builder
+apple_platform = env["APPLE_PLATFORM"]
+sdk_path = env["APPLE_SDK_PATH"]
+current_path = Dir(".").abspath
+bridging_header_filename = "bridging_header_watchos.h"
+# The Swift sources are compiled together into a single object that's linked into the library.
+swift_module = setup_swift_builder(
+    env_watchos,
+    apple_platform,
+    sdk_path,
+    current_path,
+    bridging_header_filename,
+    swift_file_names,
+)
+
+# Enable module support
+env_watchos.Append(CCFLAGS=["-fmodules", "-fcxx-modules"])
+
+watchos_lib = env_watchos.add_library("watchos", mm_file_names + cpp_file_names + list(swift_module))
+if "LIBS_EXTERNAL" in env_watchos:
+    env_watchos.Depends(watchos_lib, env_watchos["LIBS_EXTERNAL"])
+
+# Build the Swift->ObjC interop header before any ObjC++ source that #imports it.
+env_watchos.Depends(watchos_lib, env_watchos["SWIFT_OBJC_HEADER_TARGET"])
+
+combine_command = env_watchos.Command(
+    "#bin/libgodot" + env_watchos["LIBSUFFIX"], [watchos_lib] + env_watchos["LIBS"], combine_libs_apple_embedded
+)
+
+if env["generate_bundle"]:
+    env.AlwaysBuild(env.CommandNoCache("generate_bundle", combine_command, env.Run(generate_bundle)))

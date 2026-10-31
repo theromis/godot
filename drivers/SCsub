@@ -26,8 +26,9 @@ if env["xaudio2"]:
     SConscript("xaudio2/SCsub")
 
 # Shared Apple platform drivers
-if env["platform"] in ["macos", "ios", "visionos"]:
+if env["platform"] in ["macos", "ios", "visionos", "watchos"]:
     SConscript("apple/SCsub")
+if env["platform"] in ["macos", "ios", "visionos"]:
     SConscript("coreaudio/SCsub")
 if env["platform"] in ["ios", "visionos"]:
     SConscript("apple_embedded/SCsub")

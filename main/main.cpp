@@ -2521,6 +2521,9 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		if (rendering_method != "forward_plus" &&
 				rendering_method != "mobile" &&
 				rendering_method != "gl_compatibility" &&
+#ifdef SOFTWARE_RENDERER_ENABLED
+				rendering_method != "software" &&
+#endif
 				rendering_method != "dummy") {
 			OS::get_singleton()->print("Unknown rendering method '%s', aborting.\nValid options are ",
 					rendering_method.utf8().get_data());
@@ -2595,6 +2598,10 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		if (rendering_method.is_empty()) {
 			if (rendering_driver == "dummy") {
 				rendering_method = "dummy";
+#ifdef SOFTWARE_RENDERER_ENABLED
+			} else if (rendering_driver == "software") {
+				rendering_method = "software";
+#endif
 			} else if (rendering_driver == "opengl3" || rendering_driver == "opengl3_angle" || rendering_driver == "opengl3_es") {
 				rendering_method = "gl_compatibility";
 			} else {
@@ -2629,6 +2636,11 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		if (rendering_method == "dummy") {
 			available_drivers.push_back("dummy");
 		}
+#ifdef SOFTWARE_RENDERER_ENABLED
+		if (rendering_method == "software") {
+			available_drivers.push_back("software");
+		}
+#endif
 		if (available_drivers.is_empty()) {
 			OS::get_singleton()->print("Unknown renderer name '%s', aborting.\n", rendering_method.utf8().get_data());
 			goto error;
@@ -2668,6 +2680,10 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	if (rendering_driver.is_empty()) {
 		if (rendering_method == "dummy") {
 			rendering_driver = "dummy";
+#ifdef SOFTWARE_RENDERER_ENABLED
+		} else if (rendering_method == "software") {
+			rendering_driver = "software";
+#endif
 		} else if (rendering_method == "gl_compatibility") {
 			rendering_driver = GLOBAL_GET("rendering/gl_compatibility/driver");
 			rendering_driver_source = OS::RenderingSource::RENDERING_SOURCE_PROJECT_SETTING;

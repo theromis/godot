@@ -581,7 +581,7 @@ StreamedTexture2D::StreamedTexture2D() {
 #ifdef MODULE_TEXTURE_STREAMING_ENABLED
 	const bool streaming_enabled = GLOBAL_GET("rendering/textures/streaming/enabled");
 	const String rendering_method = OS::get_singleton()->get_current_rendering_method();
-	use_streaming = streaming_enabled && rendering_method != "gl_compatibility";
+	use_streaming = streaming_enabled && rendering_method != "gl_compatibility" && rendering_method != "software";
 	if (!use_streaming) {
 		_current_mip.store(0); // force full resolution (mip 0)
 	} else {

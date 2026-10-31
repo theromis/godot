@@ -109,6 +109,17 @@ private:
 	static Error _walk_dir_recursive(Ref<DirAccess> &p_da, FileHandler p_handler, void *p_userdata);
 	static Error _codesign(String p_file, void *p_userdata);
 
+	struct AppleEmbeddedExportAsset {
+		String exported_path;
+		bool is_framework = false; // framework is anything linked to the binary, otherwise it's a resource
+		bool should_embed = false;
+	};
+
+	String _get_additional_plist_content();
+	String _get_linker_flags();
+	String _get_cpp_code();
+
+protected:
 	struct ExportArchitecture {
 		String name;
 		bool is_default = false;
@@ -121,17 +132,6 @@ private:
 		}
 	};
 
-	struct AppleEmbeddedExportAsset {
-		String exported_path;
-		bool is_framework = false; // framework is anything linked to the binary, otherwise it's a resource
-		bool should_embed = false;
-	};
-
-	String _get_additional_plist_content();
-	String _get_linker_flags();
-	String _get_cpp_code();
-
-protected:
 	struct AppleEmbeddedConfigData {
 		String pkg_name;
 		String binary_name;
@@ -198,7 +198,6 @@ protected:
 private:
 	void _fix_config_file(const Ref<EditorExportPreset> &p_preset, Vector<uint8_t> &pfile, const AppleEmbeddedConfigData &p_config, bool p_debug);
 
-	Vector<ExportArchitecture> _get_supported_architectures() const;
 	Vector<String> _get_preset_architectures(const Ref<EditorExportPreset> &p_preset) const;
 
 	void _check_xcframework_content(const String &p_path, int &r_total_libs, int &r_static_libs, int &r_dylibs, int &r_frameworks) const;
@@ -226,6 +225,8 @@ protected:
 
 	// Asset-catalog dir name under Images.xcassets. visionOS overrides for layered icons.
 	virtual String _get_iconset_dir_name() const { return "AppIcon.appiconset"; }
+
+	virtual Vector<ExportArchitecture> _get_supported_architectures() const;
 
 	virtual String get_platform_name() const = 0;
 	virtual String get_sdk_name() const = 0;

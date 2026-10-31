@@ -385,7 +385,7 @@ Dictionary OS_Unix::get_memory_info() const {
 	}
 	int64_t used = (vmstat.active_count + vmstat.inactive_count + vmstat.speculative_count + vmstat.wire_count + vmstat.compressor_page_count - vmstat.purgeable_count - vmstat.external_page_count) * (int64_t)vm_page_size;
 
-#if !defined(APPLE_EMBEDDED_ENABLED)
+#if !defined(APPLE_EMBEDDED_ENABLED) && !defined(WATCHOS_ENABLED)
 	struct xsw_usage swap_used = {};
 	len = sizeof(swap_used);
 	if (sysctlbyname("vm.swapusage", &swap_used, &len, nullptr, 0) < 0) {
@@ -399,7 +399,7 @@ Dictionary OS_Unix::get_memory_info() const {
 	if (used != 0) {
 		meminfo["free"] = phy_mem - used;
 	}
-#if defined(APPLE_EMBEDDED_ENABLED)
+#if defined(APPLE_EMBEDDED_ENABLED) || defined(WATCHOS_ENABLED)
 	meminfo["available"] = meminfo["free"];
 #else
 	if (swap_used.xsu_avail + (phy_mem - used) != 0) {
@@ -694,9 +694,9 @@ Dictionary OS_Unix::execute_with_pipe(const String &p_path, const List<String> &
 	}
 
 	Dictionary ret;
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || defined(WATCHOS_ENABLED)
 	// Don't compile this code at all to avoid undefined references.
-	// Actual virtual call goes to OS_Web.
+	// Actual virtual call goes to OS_Web. watchOS doesn't allow spawning processes.
 	ERR_FAIL_V(ret);
 #else
 	// Create pipes.
@@ -839,9 +839,9 @@ bool OS_Unix::_check_pid_is_running(const pid_t p_pid, int *r_status) const {
 }
 
 Error OS_Unix::execute(const String &p_path, const List<String> &p_arguments, String *r_pipe, int *r_exitcode, bool read_stderr, Mutex *p_pipe_mutex, bool p_open_console) {
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || defined(WATCHOS_ENABLED)
 	// Don't compile this code at all to avoid undefined references.
-	// Actual virtual call goes to OS_Web.
+	// Actual virtual call goes to OS_Web. watchOS doesn't allow spawning processes.
 	ERR_FAIL_V(ERR_BUG);
 #else
 	if (r_pipe) {
@@ -913,9 +913,9 @@ Error OS_Unix::execute(const String &p_path, const List<String> &p_arguments, St
 }
 
 Error OS_Unix::create_process(const String &p_path, const List<String> &p_arguments, ProcessID *r_child_id, bool p_open_console) {
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || defined(WATCHOS_ENABLED)
 	// Don't compile this code at all to avoid undefined references.
-	// Actual virtual call goes to OS_Web.
+	// Actual virtual call goes to OS_Web. watchOS doesn't allow spawning processes.
 	ERR_FAIL_V(ERR_BUG);
 #else
 	pid_t pid = fork();

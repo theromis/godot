@@ -644,6 +644,14 @@ def detect_darwin_sdk_path(platform, env):
         sdk_name = "xrsimulator"
         var_name = "APPLE_SDK_PATH"
 
+    elif platform == "watchos":
+        sdk_name = "watchos"
+        var_name = "APPLE_SDK_PATH"
+
+    elif platform == "watchossimulator":
+        sdk_name = "watchsimulator"
+        var_name = "APPLE_SDK_PATH"
+
     else:
         raise Exception("Invalid platform argument passed to detect_darwin_sdk_path")
 

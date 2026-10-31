@@ -17,7 +17,7 @@ compatibility_platform_aliases = {
 }
 
 # CPU architecture options.
-architectures = ["x86_32", "x86_64", "arm32", "arm64", "rv64", "ppc64", "wasm32", "loongarch64"]
+architectures = ["x86_32", "x86_64", "arm32", "arm64", "arm64_32", "rv64", "ppc64", "wasm32", "loongarch64"]
 architecture_aliases = {
     "x86": "x86_32",
     "x64": "x86_64",
@@ -401,6 +401,12 @@ def setup_swift_builder(
 
     elif apple_platform == "visionossimulator":
         target_suffix = "xros26.0-simulator"
+
+    elif apple_platform == "watchos":
+        target_suffix = "watchos10.0"  # watchOS 10.0 needed for the Observation framework
+
+    elif apple_platform == "watchossimulator":
+        target_suffix = "watchos10.0-simulator"
 
     else:
         raise Exception("Invalid platform argument passed to detect_darwin_sdk_path")
