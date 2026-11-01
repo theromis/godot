@@ -1293,6 +1293,16 @@ The following files are extracted from thirdparty sources:
 - `mesa/wayland-drm.xml`: https://gitlab.freedesktop.org/mesa/mesa/-/blob/mesa-25.3.0/src/egl/wayland/wayland-drm/wayland-drm.xml
 
 
+## wayland-webos
+
+- Upstream: https://github.com/webosose/wayland-webos
+- Version: as shipped in openlgtv buildroot-nc4 2026.08-webos SDK
+- License: Apache 2.0
+
+Files extracted from upstream source:
+
+- `protocol/webos-shell.xml` as `webos-shell.xml`
+
 ## wslay
 
 - Upstream: https://github.com/tatsuhiro-t/wslay

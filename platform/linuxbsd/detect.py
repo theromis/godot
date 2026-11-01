@@ -67,6 +67,7 @@ def get_opts():
         BoolVariable("libdecor", "Enable libdecor support", True),
         BoolVariable("touch", "Enable touch events", True),
         BoolVariable("execinfo", "Use libexecinfo on systems where glibc is not available", False),
+        BoolVariable("webos", "Build for LG webOS TV (Wayland with the webOS shell, OpenGL ES only)", False),
         # Screen reader support.
         (
             "accesskit_sdk_path",
@@ -110,8 +111,19 @@ def configure(env: "SConsEnvironment"):
         env.Append(CCFLAGS=["-m64"])
         env.Append(LINKFLAGS=["-m64"])
 
+    if env["webos"]:
+        # webOS TVs have no X11 or Vulkan loader, and their compositor draws no decorations.
+        env["x11"] = False
+        env["wayland"] = True
+        env["libdecor"] = False
+        env["vulkan"] = False
+        env.Append(CPPDEFINES=["WEBOS_ENABLED"])
+
     # CPU architecture flags.
-    if env["arch"] == "rv64":
+    if env["webos"] and env["arch"] == "arm32":
+        # webOS TV userland is 32-bit ARM with the softfp ABI, even on 64-bit SoCs.
+        env.Append(CCFLAGS=["-march=armv7-a", "-mfpu=neon", "-mfloat-abi=softfp"])
+    elif env["arch"] == "rv64":
         # G = General-purpose extensions, C = Compression extension (very common).
         env.Append(CCFLAGS=["-march=rv64gc"])
 

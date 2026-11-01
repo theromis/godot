@@ -583,6 +583,13 @@ Error OS_LinuxBSD::shell_open(const String &p_uri) {
 }
 
 bool OS_LinuxBSD::_check_internal_feature_support(const String &p_feature) {
+#ifdef WEBOS_ENABLED
+	// webOS keeps the "Linux" OS name and `linux` tag, so projects can single it out with this one.
+	if (p_feature == "webos") {
+		return true;
+	}
+#endif // WEBOS_ENABLED
+
 #ifdef FONTCONFIG_ENABLED
 	if (p_feature == "system_fonts") {
 		return font_config_initialized;

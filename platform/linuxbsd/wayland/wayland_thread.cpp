@@ -659,6 +659,20 @@ void WaylandThread::_wl_registry_on_global(void *data, struct wl_registry *wl_re
 		return;
 	}
 
+#ifdef WEBOS_ENABLED
+	if (strcmp(interface, wl_shell_interface.name) == 0) {
+		registry->wl_shell = (struct wl_shell *)wl_registry_bind(wl_registry, name, &wl_shell_interface, 1);
+		registry->wl_shell_name = name;
+		return;
+	}
+
+	if (strcmp(interface, wl_webos_shell_interface.name) == 0) {
+		registry->wl_webos_shell = (struct wl_webos_shell *)wl_registry_bind(wl_registry, name, &wl_webos_shell_interface, 1);
+		registry->wl_webos_shell_name = name;
+		return;
+	}
+#endif // WEBOS_ENABLED
+
 	if (strcmp(interface, wp_viewporter_interface.name) == 0) {
 		registry->wp_viewporter = (struct wp_viewporter *)wl_registry_bind(wl_registry, name, &wp_viewporter_interface, 1);
 		registry->wp_viewporter_name = name;
@@ -889,6 +903,30 @@ void WaylandThread::_wl_registry_on_global_remove(void *data, struct wl_registry
 
 		return;
 	}
+
+#ifdef WEBOS_ENABLED
+	if (name == registry->wl_shell_name) {
+		if (registry->wl_shell) {
+			wl_shell_destroy(registry->wl_shell);
+			registry->wl_shell = nullptr;
+		}
+
+		registry->wl_shell_name = 0;
+
+		return;
+	}
+
+	if (name == registry->wl_webos_shell_name) {
+		if (registry->wl_webos_shell) {
+			wl_webos_shell_destroy(registry->wl_webos_shell);
+			registry->wl_webos_shell = nullptr;
+		}
+
+		registry->wl_webos_shell_name = 0;
+
+		return;
+	}
+#endif // WEBOS_ENABLED
 
 	if (name == registry->xdg_wm_base_name) {
 		if (registry->xdg_wm_base) {
@@ -1626,6 +1664,82 @@ void WaylandThread::_xdg_popup_on_popup_done(void *data, struct xdg_popup *xdg_p
 
 	ws->wayland_thread->push_message(ev_msg);
 }
+
+#ifdef WEBOS_ENABLED
+void WaylandThread::_wl_shell_surface_on_ping(void *data, struct wl_shell_surface *wl_shell_surface, uint32_t serial) {
+	wl_shell_surface_pong(wl_shell_surface, serial);
+}
+
+void WaylandThread::_wl_shell_surface_on_configure(void *data, struct wl_shell_surface *wl_shell_surface, uint32_t edges, int32_t width, int32_t height) {
+	WindowState *ws = (WindowState *)data;
+	ERR_FAIL_NULL(ws);
+
+	if (width > 0 && height > 0) {
+		window_state_update_size(ws, width, height);
+	}
+
+	DEBUG_LOG_WAYLAND_THREAD(vformat("wl_shell surface on configure width %d height %d.", width, height));
+}
+
+void WaylandThread::_wl_shell_surface_on_popup_done(void *data, struct wl_shell_surface *wl_shell_surface) {
+}
+
+void WaylandThread::_wl_webos_shell_surface_on_state_changed(void *data, struct wl_webos_shell_surface *wl_webos_shell_surface, uint32_t state) {
+	WindowState *ws = (WindowState *)data;
+	ERR_FAIL_NULL(ws);
+
+	ws->maximized = state == WL_WEBOS_SHELL_SURFACE_STATE_MAXIMIZED;
+	ws->fullscreen = state == WL_WEBOS_SHELL_SURFACE_STATE_FULLSCREEN;
+	// The compositor minimizes the app when the user switches away from it.
+	ws->suspended = state == WL_WEBOS_SHELL_SURFACE_STATE_MINIMIZED;
+
+	switch (state) {
+		case WL_WEBOS_SHELL_SURFACE_STATE_MINIMIZED: {
+			ws->mode = DisplayServerEnums::WINDOW_MODE_MINIMIZED;
+		} break;
+
+		case WL_WEBOS_SHELL_SURFACE_STATE_MAXIMIZED: {
+			ws->mode = DisplayServerEnums::WINDOW_MODE_MAXIMIZED;
+		} break;
+
+		case WL_WEBOS_SHELL_SURFACE_STATE_FULLSCREEN: {
+			ws->mode = DisplayServerEnums::WINDOW_MODE_FULLSCREEN;
+		} break;
+
+		default: {
+			ws->mode = DisplayServerEnums::WINDOW_MODE_WINDOWED;
+		} break;
+	}
+
+	Ref<WindowEventMessage> msg;
+	msg.instantiate();
+	msg->id = ws->id;
+	msg->event = ws->suspended ? DisplayServerEnums::WINDOW_EVENT_FOCUS_OUT : DisplayServerEnums::WINDOW_EVENT_FOCUS_IN;
+	ws->wayland_thread->push_message(msg);
+
+	DEBUG_LOG_WAYLAND_THREAD(vformat("webOS shell surface state changed to %d.", state));
+}
+
+void WaylandThread::_wl_webos_shell_surface_on_position_changed(void *data, struct wl_webos_shell_surface *wl_webos_shell_surface, int32_t x, int32_t y) {
+}
+
+void WaylandThread::_wl_webos_shell_surface_on_close(void *data, struct wl_webos_shell_surface *wl_webos_shell_surface) {
+	WindowState *ws = (WindowState *)data;
+	ERR_FAIL_NULL(ws);
+
+	Ref<WindowEventMessage> msg;
+	msg.instantiate();
+	msg->id = ws->id;
+	msg->event = DisplayServerEnums::WINDOW_EVENT_CLOSE_REQUEST;
+	ws->wayland_thread->push_message(msg);
+}
+
+void WaylandThread::_wl_webos_shell_surface_on_exposed(void *data, struct wl_webos_shell_surface *wl_webos_shell_surface, struct wl_array *rectangles) {
+}
+
+void WaylandThread::_wl_webos_shell_surface_on_state_about_to_change(void *data, struct wl_webos_shell_surface *wl_webos_shell_surface, uint32_t state) {
+}
+#endif // WEBOS_ENABLED
 
 void WaylandThread::_xdg_popup_on_repositioned(void *data, struct xdg_popup *xdg_popup, uint32_t token) {
 	DEBUG_LOG_WAYLAND_THREAD(vformat("stub xdg popup repositioned %x", token));
@@ -4283,7 +4397,12 @@ void WaylandThread::seat_state_update_cursor(SeatState *p_ss) {
 	wl_pointer_set_cursor(p_ss->wl_pointer, p_ss->pointer_enter_serial, p_ss->cursor_surface, hotspot_x, hotspot_y);
 	wl_surface_set_buffer_scale(p_ss->cursor_surface, scale);
 	wl_surface_attach(p_ss->cursor_surface, cursor_buffer, 0, 0);
-	wl_surface_damage_buffer(p_ss->cursor_surface, 0, 0, INT_MAX, INT_MAX);
+	if (wl_proxy_get_version((struct wl_proxy *)p_ss->cursor_surface) >= WL_SURFACE_DAMAGE_BUFFER_SINCE_VERSION) {
+		wl_surface_damage_buffer(p_ss->cursor_surface, 0, 0, INT_MAX, INT_MAX);
+	} else {
+		// wl_compositor v3 and older (e.g. webOS TVs) only have surface-local damage.
+		wl_surface_damage(p_ss->cursor_surface, 0, 0, INT_MAX, INT_MAX);
+	}
 
 	wl_surface_commit(p_ss->cursor_surface);
 }
@@ -4378,6 +4497,43 @@ void WaylandThread::window_create(DisplayServerEnums::WindowID p_window_id, cons
 
 	bool decorated = false;
 
+#ifdef WEBOS_ENABLED
+	if (!registry.xdg_wm_base && registry.wl_webos_shell) {
+		// webOS apps are always fullscreen; the compositor never sends a
+		// configure, so the window is ready as soon as the roles are assigned.
+		if (registry.wl_shell) {
+			ws.wl_shell_surface = wl_shell_get_shell_surface(registry.wl_shell, ws.wl_surface);
+			wl_shell_surface_add_listener(ws.wl_shell_surface, &wl_shell_surface_listener, &ws);
+			wl_shell_surface_set_toplevel(ws.wl_shell_surface);
+		}
+
+		ws.wl_webos_shell_surface = wl_webos_shell_get_shell_surface(registry.wl_webos_shell, ws.wl_surface);
+		wl_webos_shell_surface_add_listener(ws.wl_webos_shell_surface, &wl_webos_shell_surface_listener, &ws);
+
+		// The application manager exports the launched app's ID; the compositor
+		// uses it to tie the surface to the app (focus, Back/Home, lifecycle).
+		String app_id = OS::get_singleton()->get_environment("APPID");
+		if (app_id.is_empty()) {
+			app_id = "org.godotengine.webos";
+		}
+		wl_webos_shell_surface_set_property(ws.wl_webos_shell_surface, "appId", app_id.utf8().get_data());
+		wl_webos_shell_surface_set_property(ws.wl_webos_shell_surface, "displayAffinity", "0");
+		wl_webos_shell_surface_set_state(ws.wl_webos_shell_surface, WL_WEBOS_SHELL_SURFACE_STATE_FULLSCREEN);
+
+		Size2i size = screen_get_data(0).size;
+		if (size.width <= 0 || size.height <= 0) {
+			size = ws.rect.size;
+		}
+
+		ws.mode = DisplayServerEnums::WINDOW_MODE_FULLSCREEN;
+		ws.fullscreen = true;
+		window_state_update_size(&ws, size.width, size.height);
+		ws.ready = true;
+
+		decorated = true;
+	}
+#endif // WEBOS_ENABLED
+
 #ifdef LIBDECOR_ENABLED
 	if (!decorated && libdecor_context) {
 		ws.libdecor_frame = libdecor_decorate(libdecor_context, ws.wl_surface, (struct libdecor_frame_interface *)&libdecor_frame_interface, &ws);
@@ -4394,7 +4550,7 @@ void WaylandThread::window_create(DisplayServerEnums::WindowID p_window_id, cons
 	}
 #endif
 
-	if (!decorated) {
+	if (!decorated && registry.xdg_wm_base) {
 		// libdecor has failed loading or is disabled, we shall handle xdg_toplevel
 		// creation and decoration ourselves (and by decorating for now I just mean
 		// asking for SSDs and hoping for the best).
@@ -4538,6 +4694,16 @@ void WaylandThread::window_destroy(DisplayServerEnums::WindowID p_window_id) {
 	if (ws.xdg_toplevel) {
 		xdg_toplevel_destroy(ws.xdg_toplevel);
 	}
+
+#ifdef WEBOS_ENABLED
+	if (ws.wl_webos_shell_surface) {
+		wl_webos_shell_surface_destroy(ws.wl_webos_shell_surface);
+	}
+
+	if (ws.wl_shell_surface) {
+		wl_shell_surface_destroy(ws.wl_shell_surface);
+	}
+#endif // WEBOS_ENABLED
 
 #ifdef LIBDECOR_ENABLED
 	if (ws.libdecor_frame) {
@@ -5699,7 +5865,13 @@ Error WaylandThread::init() {
 
 	ERR_FAIL_NULL_V_MSG(registry.wl_shm, ERR_UNAVAILABLE, "Can't obtain the Wayland shared memory global.");
 	ERR_FAIL_NULL_V_MSG(registry.wl_compositor, ERR_UNAVAILABLE, "Can't obtain the Wayland compositor global.");
+#ifdef WEBOS_ENABLED
+	if (!registry.xdg_wm_base) {
+		ERR_FAIL_NULL_V_MSG(registry.wl_webos_shell, ERR_UNAVAILABLE, "Can't obtain the Wayland XDG shell or webOS shell global.");
+	}
+#else
 	ERR_FAIL_NULL_V_MSG(registry.xdg_wm_base, ERR_UNAVAILABLE, "Can't obtain the Wayland XDG shell global.");
+#endif // WEBOS_ENABLED
 
 	// Embedded games can't access the decoration and icon protocol.
 	if (!Engine::get_singleton()->is_embedded_in_editor()) {

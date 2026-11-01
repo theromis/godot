@@ -118,6 +118,9 @@ generated_sources = [
     generate_from_xml("godot_embedding_compositor", "godot-embedding-compositor.xml"),
 ]
 
+if env["webos"]:
+    generated_sources.append(generate_from_xml("webos_shell", "#thirdparty/wayland-webos/webos-shell.xml"))
+
 source_files = generated_sources + [
     File("detect_prime_egl.cpp"),
     File("display_server_wayland.cpp"),

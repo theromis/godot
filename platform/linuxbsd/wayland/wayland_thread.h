@@ -77,6 +77,10 @@
 #include "wayland/protocol/xdg_system_bell.gen.h"
 #include "wayland/protocol/xdg_toplevel_icon.gen.h"
 
+#ifdef WEBOS_ENABLED
+#include "wayland/protocol/webos_shell.gen.h"
+#endif // WEBOS_ENABLED
+
 // NOTE: Deprecated.
 #include "wayland/protocol/xdg_foreign_v1.gen.h"
 
@@ -220,6 +224,15 @@ public:
 		struct xdg_wm_base *xdg_wm_base = nullptr;
 		uint32_t xdg_wm_base_name = 0;
 
+#ifdef WEBOS_ENABLED
+		// webOS TV compositors don't expose xdg-shell, only wl_shell and their own shell.
+		struct wl_shell *wl_shell = nullptr;
+		uint32_t wl_shell_name = 0;
+
+		struct wl_webos_shell *wl_webos_shell = nullptr;
+		uint32_t wl_webos_shell_name = 0;
+#endif // WEBOS_ENABLED
+
 		// NOTE: Deprecated.
 		struct zxdg_exporter_v1 *xdg_exporter_v1 = nullptr;
 		uint32_t xdg_exporter_v1_name = 0;
@@ -333,6 +346,11 @@ public:
 		struct wl_surface *wl_surface = nullptr;
 		struct xdg_surface *xdg_surface = nullptr;
 		struct xdg_toplevel *xdg_toplevel = nullptr;
+
+#ifdef WEBOS_ENABLED
+		struct wl_shell_surface *wl_shell_surface = nullptr;
+		struct wl_webos_shell_surface *wl_webos_shell_surface = nullptr;
+#endif // WEBOS_ENABLED
 
 		struct wp_viewport *wp_viewport = nullptr;
 		struct wp_fractional_scale_v1 *wp_fractional_scale = nullptr;
@@ -828,6 +846,19 @@ private:
 
 	static void _xdg_popup_on_configure(void *data, struct xdg_popup *xdg_popup, int32_t x, int32_t y, int32_t width, int32_t height);
 	static void _xdg_popup_on_popup_done(void *data, struct xdg_popup *xdg_popup);
+
+#ifdef WEBOS_ENABLED
+	// wl_shell and webOS shell event handlers.
+	static void _wl_shell_surface_on_ping(void *data, struct wl_shell_surface *wl_shell_surface, uint32_t serial);
+	static void _wl_shell_surface_on_configure(void *data, struct wl_shell_surface *wl_shell_surface, uint32_t edges, int32_t width, int32_t height);
+	static void _wl_shell_surface_on_popup_done(void *data, struct wl_shell_surface *wl_shell_surface);
+
+	static void _wl_webos_shell_surface_on_state_changed(void *data, struct wl_webos_shell_surface *wl_webos_shell_surface, uint32_t state);
+	static void _wl_webos_shell_surface_on_position_changed(void *data, struct wl_webos_shell_surface *wl_webos_shell_surface, int32_t x, int32_t y);
+	static void _wl_webos_shell_surface_on_close(void *data, struct wl_webos_shell_surface *wl_webos_shell_surface);
+	static void _wl_webos_shell_surface_on_exposed(void *data, struct wl_webos_shell_surface *wl_webos_shell_surface, struct wl_array *rectangles);
+	static void _wl_webos_shell_surface_on_state_about_to_change(void *data, struct wl_webos_shell_surface *wl_webos_shell_surface, uint32_t state);
+#endif // WEBOS_ENABLED
 	static void _xdg_popup_on_repositioned(void *data, struct xdg_popup *xdg_popup, uint32_t token);
 
 	// wayland-protocols event handlers.
@@ -1029,6 +1060,22 @@ private:
 		.configure_bounds = _xdg_toplevel_on_configure_bounds,
 		.wm_capabilities = _xdg_toplevel_on_wm_capabilities,
 	};
+
+#ifdef WEBOS_ENABLED
+	static constexpr struct wl_shell_surface_listener wl_shell_surface_listener = {
+		.ping = _wl_shell_surface_on_ping,
+		.configure = _wl_shell_surface_on_configure,
+		.popup_done = _wl_shell_surface_on_popup_done,
+	};
+
+	static constexpr struct wl_webos_shell_surface_listener wl_webos_shell_surface_listener = {
+		.state_changed = _wl_webos_shell_surface_on_state_changed,
+		.position_changed = _wl_webos_shell_surface_on_position_changed,
+		.close = _wl_webos_shell_surface_on_close,
+		.exposed = _wl_webos_shell_surface_on_exposed,
+		.state_about_to_change = _wl_webos_shell_surface_on_state_about_to_change,
+	};
+#endif // WEBOS_ENABLED
 
 	static constexpr struct xdg_popup_listener xdg_popup_listener = {
 		.configure = _xdg_popup_on_configure,

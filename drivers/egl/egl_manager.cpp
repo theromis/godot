@@ -85,7 +85,14 @@ int EGLManager::_get_gldisplay_id(void *p_display) {
 	GLDisplay new_gldisplay;
 	new_gldisplay.display = p_display;
 
+#ifdef WEBOS_ENABLED
+	if (true) {
+		// See EGLManager::initialize().
+		new_gldisplay.egl_display = eglGetDisplay((EGLNativeDisplayType)new_gldisplay.display);
+	} else if (GLAD_EGL_VERSION_1_5) {
+#else
 	if (GLAD_EGL_VERSION_1_5) {
+#endif // WEBOS_ENABLED
 		Vector<EGLAttrib> attribs = _get_platform_display_attributes();
 		new_gldisplay.egl_display = eglGetPlatformDisplay(_get_platform_extension_enum(), new_gldisplay.display, (attribs.size() > 0) ? attribs.ptr() : nullptr);
 	} else if (GLAD_EGL_EXT_platform_base) {
@@ -458,6 +465,11 @@ Error EGLManager::initialize(void *p_native_display) {
 
 	EGLDisplay tmp_display = EGL_NO_DISPLAY;
 
+#ifdef WEBOS_ENABLED
+	// The webOS Mali driver doesn't implement EGL_KHR_platform_wayland, it
+	// only takes the wl_display through the legacy entry point.
+	tmp_display = eglGetDisplay((EGLNativeDisplayType)p_native_display);
+#else
 	if (GLAD_EGL_EXT_platform_base) {
 #ifdef EGL_EXT_platform_base
 		// eglGetPlatformDisplayEXT wants its attributes as EGLint.
@@ -472,6 +484,7 @@ Error EGLManager::initialize(void *p_native_display) {
 		EGLNativeDisplayType *native_display_type = (EGLNativeDisplayType *)p_native_display;
 		tmp_display = eglGetDisplay(*native_display_type);
 	}
+#endif // WEBOS_ENABLED
 
 	if (tmp_display == EGL_NO_DISPLAY) {
 		eglTerminate(tmp_display);

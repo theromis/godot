@@ -281,6 +281,14 @@ void DisplayServerWayland::_hover_window(DisplayServerEnums::WindowID p_window_i
 // Interface methods.
 
 bool DisplayServerWayland::has_feature(DisplayServerEnums::Feature p_feature) const {
+#ifdef WEBOS_ENABLED
+	// The webOS shell only knows one fullscreen surface per app, so popups and
+	// dialogs have to be embedded in the main window.
+	if (p_feature == DisplayServerEnums::FEATURE_SUBWINDOWS || p_feature == DisplayServerEnums::FEATURE_WINDOW_EMBEDDING) {
+		return false;
+	}
+#endif // WEBOS_ENABLED
+
 	switch (p_feature) {
 #ifndef DISABLE_DEPRECATED
 		case DisplayServerEnums::FEATURE_GLOBAL_MENU: {
